@@ -1,0 +1,32 @@
+[package]
+name = "rb_tree"
+description = "A Red Black Tree implementation in Rust"
+version = "0.1.0"
+edition = "2021"
+keywords = ["red", "tree", "set", "balanced", "priority"]
+categories = ["data-structures"]
+exclude = [".github*", ".gitignore"]
+
+[features]
+default = ["set", "queue", "map"]
+set = []
+queue = []
+map = []
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+fnv = "^1.0.7"
+rand = "0.8.3"
+rand_chacha = "0.3.0"
+criterion = "^0.3.4"
+serde_json = "1.0"
+
+[[bench]]
+name = "map_bench"
+harness = false
+
+[[bench]]
+name = "queue_bench"
+harness = false
