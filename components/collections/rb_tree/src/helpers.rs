@@ -10,14 +10,14 @@ pub fn write_to_level<T: Debug>(
     if levels.len() <= level {
         match cur {
             Node::Internal(n) => levels.push(format!("{}{}:{:?}", from_str, n.colour(), n.value())),
-            Node::Leaf(_) => levels.push(format!("{}__", from_str)),
+            Node::Leaf(_) => levels.push(format!("{}___", from_str)),
         }
     } else {
         match cur {
             Node::Internal(n) => {
                 levels[level] += &format!(" {}{}:{:?}", from_str, n.colour(), n.value())
             }
-            Node::Leaf(_) => levels[level] += &format!(" {}__", from_str),
+            Node::Leaf(_) => levels[level] += &format!(" {}___", from_str),
         }
     }
     if !cur.is_leaf() {
