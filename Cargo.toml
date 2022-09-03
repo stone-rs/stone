@@ -5,7 +5,8 @@ edition = "2021"
 
 [workspace]
 members = [
-    "components/collections/rb_tree"
+    "components/collections/rb_tree",
+    "components/collections/btree",
 ]
 
 [dependencies]
