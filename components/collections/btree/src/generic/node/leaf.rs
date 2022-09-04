@@ -8,10 +8,12 @@ use crate::{
 use smallvec::SmallVec;
 use std::borrow::Borrow;
 
+#[derive(Clone)]
 pub struct Leaf<K, V> {
     parent: usize,
     items: SmallVec<[Item<K, V>; M + 1]>,
 }
+
 impl<K, V> Leaf<K, V> {
     #[inline]
     pub fn new(parent: Option<usize>, item: Item<K, V>) -> Leaf<K, V> {
@@ -111,7 +113,15 @@ impl<K, V> Leaf<K, V> {
     }
 
     #[inline]
-    pub fn item(&mut self, offset: Offset) -> Option<&mut Item<K, V>> {
+    pub fn item(&self, offset: Offset) -> Option<&Item<K, V>> {
+        match offset.value() {
+            Some(offset) => self.items.get(offset),
+            None => None,
+        }
+    }
+
+    #[inline]
+    pub fn item_mut(&mut self, offset: Offset) -> Option<&mut Item<K, V>> {
         match offset.value() {
             Some(offset) => self.items.get_mut(offset),
             None => None,

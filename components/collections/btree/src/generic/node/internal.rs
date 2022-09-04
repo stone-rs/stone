@@ -397,4 +397,150 @@ impl<K, V> Internal<K, V> {
 
         (self.other_children.len(), median.item, right_node)
     }
+
+    /// Merge the children at the given indexes.
+    ///
+    /// It is supposed that `left_index` is `right_index-1`.
+    /// This method returns the identifier of the left node in the tree, the identifier of the right node,
+    /// the item removed from this node to be merged with the merged children and
+    /// the balance status of this node after the merging operation.
+    #[inline]
+    pub fn merge(
+        &mut self,
+        left_index: usize,
+        right_index: usize,
+    ) -> (usize, usize, usize, Item<K, V>, Balance) {
+        let left_id = self.child_id(left_index);
+        let right_id = self.child_id(right_index);
+
+        // We remove the right child (the one of index `right_index`).
+        // Since left_index = right_index-1, it is indexed by `left_index` in `other_children`.
+        let item = self.other_children.remove(left_index).item;
+
+        (left_index, left_id, right_id, item, self.balance())
+    }
+
+    #[inline]
+    pub fn push_left(&mut self, item: Item<K, V>, child_id: usize) {
+        self.other_children.insert(
+            0,
+            Branch {
+                item,
+                child: self.first_child,
+            },
+        );
+        self.first_child = child_id
+    }
+
+    #[inline]
+    pub fn pop_left(&mut self) -> Result<(Item<K, V>, usize), WouldUnderflow> {
+        if self.item_count() <= UNDERFLOW {
+            Err(WouldUnderflow)
+        } else {
+            let child_id = self.first_child;
+            let first = self.other_children.remove(0);
+            self.first_child = first.child;
+            Ok((first.item, child_id))
+        }
+    }
+
+    #[inline]
+    pub fn push_right(&mut self, item: Item<K, V>, child_id: usize) -> Offset {
+        let offset = self.other_children.len();
+        self.other_children.push(Branch {
+            item,
+            child: child_id,
+        });
+        offset.into()
+    }
+
+    #[inline]
+    pub fn pop_right(&mut self) -> Result<(Offset, Item<K, V>, usize), WouldUnderflow> {
+        if self.item_count() <= UNDERFLOW {
+            Err(WouldUnderflow)
+        } else {
+            let offset = self.other_children.len();
+            let last = self.other_children.pop().unwrap();
+            Ok((offset.into(), last.item, last.child))
+        }
+    }
+
+    #[inline]
+    pub fn append(&mut self, separator: Item<K, V>, mut other: Internal<K, V>) -> Offset {
+        let offset = self.other_children.len();
+        self.other_children.push(Branch {
+            item: separator,
+            child: other.first_child,
+        });
+
+        self.other_children.append(&mut other.other_children);
+        offset.into()
+    }
+
+    /// Write the label of the internal node in the DOT format.
+    ///
+    /// Requires the `dot` feature.
+    #[cfg(feature = "dot")]
+    #[inline]
+    pub fn dot_write_label<W: std::io::Write>(&self, f: &mut W) -> std::io::Result<()>
+    where
+        K: std::fmt::Display,
+        V: std::fmt::Display,
+    {
+        write!(f, "<c0> |")?;
+        let mut i = 1;
+        for branch in &self.other_children {
+            write!(
+                f,
+                "{{{}|<c{}> {}}} |",
+                branch.item.key(),
+                i,
+                branch.item.value()
+            )?;
+            i += 1;
+        }
+
+        Ok(())
+    }
+
+    #[cfg(debug_assertions)]
+    pub fn validate(&self, parent: Option<usize>, min: Option<&K>, max: Option<&K>) 
+    where
+        K: Ord
+    {
+        if self.parent() != parent {
+            panic!("wrong parent")
+        }
+
+        if min.is_some() || max.is_some() {
+            // not root
+            match self.balance() {
+                Balance::Overflow => panic!("internal node is overflowing"),
+                Balance::Underflow(_) => panic!("internal node is underflowing"),
+                _ => (),
+            }
+        } else if self.item_count() == 0 {
+            panic!("root node is empty")
+        }
+
+        if !self.other_children.windows(2).all(|w| w[0] < w[1]) {
+            panic!("internal node items are not sorted")
+        }
+
+        if let Some(min) = min {
+            if let Some(b) = self.other_children.first() {
+                if min >= b.item.key() {
+                    panic!("internal node item key is greater than right separator")
+                }
+            }
+        }
+
+        if let Some(max) = max {
+            if let Some(b) = self.other_children.last() {
+                if max <= b.item.key() {
+                    panic!("internal node item key is less than left separator")
+                }
+            }
+        }
+    }
 }
