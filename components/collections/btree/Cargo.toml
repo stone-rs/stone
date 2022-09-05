@@ -5,6 +5,7 @@ edition = "2021"
 categories = ["data-structures"]
 keywords = ["btree", "map", "set", "slab"]
 description = "A memory compact Slab-based B-tree implementation"
+readme = "README.md"
 
 [features]
 default = ["std-slab"]

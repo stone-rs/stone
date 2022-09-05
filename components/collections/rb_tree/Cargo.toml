@@ -6,6 +6,7 @@ edition = "2021"
 keywords = ["red", "tree", "set", "balanced", "priority"]
 categories = ["data-structures"]
 exclude = [".github*", ".gitignore"]
+readme = "README.md"
 
 [features]
 default = ["set", "queue", "map"]

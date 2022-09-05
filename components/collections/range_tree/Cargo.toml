@@ -1,0 +1,15 @@
+[package]
+name = "range_tree"
+version = "0.1.0"
+edition = "2021"
+
+categories = ["data-structures"]
+keywords = ["btree", "range", "map", "set"]
+description = "B-tree range map implementation"
+readme = "README.md"
+
+[dependencies]
+cc-traits = "0.8.0"
+btree = "../btree"
+slab = "0.4.5"
+range-traits = "0.1.0"

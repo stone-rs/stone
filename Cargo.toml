@@ -7,6 +7,7 @@ edition = "2021"
 members = [
     "components/collections/rb_tree",
     "components/collections/btree",
+    "components/collections/range_tree",
 ]
 
 [dependencies]
