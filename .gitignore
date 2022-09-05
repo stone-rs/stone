@@ -1,1 +1,10 @@
 /target
+
+.vscode
+.idea
+
+.DS_store
+
+*.tar
+*.gz
+*.exe

@@ -4,7 +4,7 @@ use crate::generic::{
 };
 use cc_traits::{SimpleCollectionMut, SimpleCollectionRef, Slab, SlabMut};
 use smallvec::SmallVec;
-use std::{borrow::Borrow, mem::MaybeUninit, ops::Add};
+use std::{borrow::Borrow, mem::MaybeUninit};
 
 /// Extended API.
 ///
@@ -234,7 +234,7 @@ pub trait BTreeExtMut<K, V> {
 
     /// Get the node associated to the given `id` mutably.
     ///
-    /// Pancis if `id` is out of bounds.
+    /// Panics if `id` is out of bounds.
     fn node_mut(&mut self, id: usize) -> &mut Node<K, V>;
 
     /// Get a mutable reference to the value associated to the given `key` in the node `id`, if any.
@@ -363,7 +363,7 @@ where
             Some(mut id) => loop {
                 match self.node(id).child_id_opt(0) {
                     Some(child_id) => id = child_id,
-                    None => return Address::new(id, 0.into()),
+                    None => return Address::new(id, 0.into()), // TODO FIXME thechnically not the first
                 }
             },
             None => Address::nowhere(),
@@ -412,11 +412,14 @@ where
                         }
                         None => return None,
                     }
+                } else {
+                    return Some(addr);
                 }
             }
         }
     }
 
+    #[inline]
     fn leaf_address(&self, mut addr: Address) -> Address {
         if !addr.is_nowhere() {
             loop {
@@ -523,7 +526,9 @@ where
             Some(std::cmp::Ordering::Less) => {
                 addr.offset.incr();
             }
-            Some(std::cmp::Ordering::Greater) => return None,
+            Some(std::cmp::Ordering::Greater) => {
+                return None;
+            }
             _ => (),
         }
 
@@ -563,6 +568,7 @@ where
         }
     }
 
+    #[inline]
     fn next_back_address(&self, mut addr: Address) -> Option<Address> {
         if addr.is_nowhere() {
             return None;
@@ -601,6 +607,7 @@ where
         Some(addr)
     }
 
+    #[inline]
     fn next_item_or_back_address(&self, mut addr: Address) -> Option<Address> {
         if addr.is_nowhere() {
             return None;
@@ -617,7 +624,7 @@ where
             _ => (),
         }
 
-        let original_addr_shirted = addr;
+        let original_addr_shifted = addr;
 
         loop {
             let node = self.node(addr.id);
@@ -640,7 +647,7 @@ where
                             addr.offset = self.node(parent_id).child_index(addr.id).unwrap().into();
                             addr.id = parent_id;
                         }
-                        None => return Some(original_addr_shirted),
+                        None => return Some(original_addr_shifted),
                     }
                 },
             }
@@ -674,6 +681,7 @@ where
         }
     }
 
+    #[cfg(debug_assertions)]
     fn validate(&self)
     where
         K: Ord,
@@ -683,6 +691,8 @@ where
         }
     }
 
+    /// Validate the given node and returns the depth of the node.
+    #[cfg(debug_assertions)]
     fn validate_node(
         &self,
         id: usize,
@@ -726,13 +736,13 @@ where
     C: SimpleCollectionMut,
 {
     #[inline]
-    fn set_len(&mut self, len: usize) {
-        self.len = len
+    fn set_len(&mut self, new_len: usize) {
+        self.len = new_len
     }
 
     #[inline]
     fn set_root_id(&mut self, id: Option<usize>) {
-        self.root = id;
+        self.root = id
     }
 
     #[inline]
@@ -740,6 +750,7 @@ where
         C::into_mut(self.nodes.get_mut(id).unwrap())
     }
 
+    #[inline]
     fn get_mut_in<'a>(&'a mut self, key: &K, mut id: usize) -> Option<&'a mut V>
     where
         K: Ord,
@@ -831,136 +842,10 @@ where
         }
     }
 
-    #[inline]
-    fn rebalance(&mut self, mut id: usize, mut addr: Address) -> Address {
-        let mut balance = self.node(id).balance();
-
-        loop {
-            match balance {
-                Balance::Balanced => break,
-                Balance::Overflow => {
-                    assert!(!self.node_mut(id).is_underflowing());
-                    let (median_offset, median, right_node) = self.node_mut(id).split();
-                    let right_id = self.allocate_node(right_node);
-
-                    match self.node(id).parent() {
-                        Some(parent_id) => {
-                            let parent = self.node_mut(parent_id);
-                            let offset = parent.child_index(id).unwrap().into();
-                            parent.insert(offset, median, Some(right_id));
-
-                            // new address.
-                            if addr.id == id {
-                                match addr.offset.partial_cmp(&median_offset) {
-                                    Some(std::cmp::Ordering::Equal) => {
-                                        addr = Address {
-                                            id: parent_id,
-                                            offset,
-                                        }
-                                    }
-                                    Some(std::cmp::Ordering::Greater) => {
-                                        addr = Address {
-                                            id: right_id,
-                                            offset: (addr.offset.unwrap() - median_offset - 1)
-                                                .into(),
-                                        }
-                                    }
-                                    _ => (),
-                                }
-                            } else if addr.id == parent_id && addr.offset >= offset {
-                                addr.offset.incr();
-                            }
-
-                            id = parent_id;
-                            balance = parent.balance();
-                        }
-                        None => {
-                            let left_id = id;
-                            let new_root = Node::binary(None, left_id, median, right_id);
-                            let root_id = self.allocate_node(new_root);
-
-                            self.root = Some(root_id);
-                            self.node_mut(left_id).set_parent(Some(root_id));
-                            self.node_mut(right_id).set_parent(Some(root_id));
-
-                            // new address.
-                            if addr.id == id {
-                                match addr.offset.partial_cmp(&median_offset) {
-                                    Some(std::cmp::Ordering::Equal) => {
-                                        addr = Address {
-                                            id: root_id,
-                                            offset: 0.into(),
-                                        }
-                                    },
-                                    Some(std::cmp::Ordering::Greater) => {
-                                        addr = Address {
-                                            id: right_id,
-                                            offset: (addr.offset.unwrap() - median_offset - 1).into(),
-                                        }
-                                    }
-                                    _ => (),
-                                }
-                            }
-
-                            break;
-                        },
-                    }
-                }
-                Balance::Underflow(is_empty) => {
-                    match self.node(id).parent() {
-                        Some(parent_id) => {
-                            let index = self.node(parent_id).child_index(id).unwrap();
-                            // An underflow append in the child node.
-                            // First we try to rebalance the tree by rotation.
-                            if self.try_rotate_left(parent_id, index, &mut addr) 
-                                || self.try_rotate_right(parent_id, index, &mut addr) {
-                                    break;
-                                } else {
-                                    // Rotation didn't work.
-                                    // This means that all existing child sibling have enough few elements to be merge with this child.
-                                    let (new_balance, new_addr) = self.merge(parent_id, index, addr);
-                                    balance = new_balance;
-                                    addr = new_addr;
-                                    // The `merge` function returns the current balance of the parent node,
-                                    // since it may underflow after the mergin operation.
-                                    id = parent_id
-                                }
-                        },
-                        None => {
-                            // if root is empty.
-                            if is_empty {
-                                self.root = self.node(id).child_id_opt(0);
-
-                                // update root's parent and addr.
-                                match self.root {
-                                    Some(root_id) => {
-                                        let root = self.node_mut(root_id);
-                                        root.set_parent(None);
-
-                                        if addr.id == id {
-                                            addr.id = root_id;
-                                            addr.offset = root.item_count().into();
-                                        }
-                                    },
-                                    None => addr = Address::nowhere(),
-                                }
-
-                                self.release_node(id);
-                            }
-                            break;
-                        },
-                    }
-                },
-            }
-        }
-
-        addr
-    }
-
     fn update_in<T, F>(&mut self, mut id: usize, key: K, action: F) -> T
-    where
-        K: Ord,
-        F: FnOnce(Option<V>) -> (Option<V>, T),
+        where
+            K: Ord,
+            F: FnOnce(Option<V>) -> (Option<V>, T),
     {
         loop {
             match self.node(id).offset_of(&key) {
@@ -1001,9 +886,9 @@ where
     }
 
     fn update_at<T, F>(&mut self, addr: Address, action: F) -> T
-    where
-        K: Ord,
-        F: FnOnce(V) -> (Option<V>, T),
+        where
+            K: Ord,
+            F: FnOnce(V) -> (Option<V>, T),
     {
         unsafe {
             let mut value = MaybeUninit::uninit();
@@ -1018,7 +903,7 @@ where
                 None => {
                     let (item, _) = self.remove_at(addr).unwrap();
                     // item's value is NOT initialized here.
-                    // It must be dropped.
+                    // It must not be dropped.
                     item.forget_value()
                 }
             }
@@ -1028,11 +913,142 @@ where
     }
 
     #[inline]
+    fn rebalance(&mut self, mut id: usize, mut addr: Address) -> Address {
+        let mut balance = self.node(id).balance();
+
+        loop {
+            match balance {
+                Balance::Balanced => break,
+                Balance::Overflow => {
+                    assert!(!self.node_mut(id).is_underflowing());
+                    let (median_offset, median, right_node) = self.node_mut(id).split();
+                    let right_id = self.allocate_node(right_node);
+
+                    match self.node(id).parent() {
+                        Some(parent_id) => {
+                            let parent = self.node_mut(parent_id);
+                            let offset = parent.child_index(id).unwrap().into();
+                            parent.insert(offset, median, Some(right_id));
+
+                            // new address.
+                            if addr.id == id {
+                                match addr.offset.partial_cmp(&median_offset) {
+                                    Some(std::cmp::Ordering::Equal) => {
+                                        addr = Address {
+                                            id: parent_id,
+                                            offset,
+                                        }
+                                    }
+                                    Some(std::cmp::Ordering::Greater) => {
+                                        addr = Address {
+                                            id: right_id,
+                                            offset: (addr.offset.unwrap() - median_offset - 1)
+                                                .into(),
+                                        }
+                                    }
+                                    _ => (),
+                                }
+                            } else if addr.id == parent_id && addr.offset >= offset {
+                                addr.offset.incr()
+                            }
+
+                            id = parent_id;
+                            balance = parent.balance()
+                        }
+                        None => {
+                            let left_id = id;
+                            let new_root = Node::binary(None, left_id, median, right_id);
+                            let root_id = self.allocate_node(new_root);
+
+                            self.root = Some(root_id);
+                            self.node_mut(left_id).set_parent(Some(root_id));
+                            self.node_mut(right_id).set_parent(Some(root_id));
+
+                            // new address.
+                            if addr.id == id {
+                                match addr.offset.partial_cmp(&median_offset) {
+                                    Some(std::cmp::Ordering::Equal) => {
+                                        addr = Address {
+                                            id: root_id,
+                                            offset: 0.into(),
+                                        }
+                                    }
+                                    Some(std::cmp::Ordering::Greater) => {
+                                        addr = Address {
+                                            id: right_id,
+                                            offset: (addr.offset.unwrap() - median_offset - 1)
+                                                .into(),
+                                        }
+                                    }
+                                    _ => (),
+                                }
+                            }
+
+                            break;
+                        }
+                    };
+                }
+                Balance::Underflow(is_empty) => {
+                    match self.node(id).parent() {
+                        Some(parent_id) => {
+                            let index = self.node(parent_id).child_index(id).unwrap();
+                            // An underflow append in the child node.
+                            // First we try to rebalance the tree by rotation.
+                            if self.try_rotate_left(parent_id, index, &mut addr)
+                                || self.try_rotate_right(parent_id, index, &mut addr)
+                            {
+                                break;
+                            } else {
+                                // Rotation didn't work.
+                                // This means that all existing child sibling have enough few elements to be merged with this child.
+                                let (new_balance, new_addr) = self.merge(parent_id, index, addr);
+                                balance = new_balance;
+                                addr = new_addr;
+                                // The `merge` function returns the current balance of the parent node,
+                                // since it may underflow after the merging operation.
+                                id = parent_id
+                            }
+                        }
+                        None => {
+                            // if root is empty.
+                            if is_empty {
+                                self.root = self.node(id).child_id_opt(0);
+
+                                // update root's parent and addr.
+                                match self.root {
+                                    Some(root_id) => {
+                                        let root = self.node_mut(root_id);
+                                        root.set_parent(None);
+
+                                        if addr.id == id {
+                                            addr.id = root_id;
+                                            addr.offset = root.item_count().into()
+                                        }
+                                    }
+                                    None => addr = Address::nowhere(),
+                                }
+
+                                self.release_node(id);
+                            }
+
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        addr
+    }
+
+    #[inline]
     fn remove_rightmost_leaf_of(&mut self, mut id: usize) -> (Item<K, V>, usize) {
         loop {
             match self.node_mut(id).remove_rightmost_leaf() {
                 Ok(result) => return (result, id),
-                Err(child_id) => id = child_id,
+                Err(child_id) => {
+                    id = child_id;
+                }
             }
         }
     }

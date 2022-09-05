@@ -57,7 +57,7 @@ where
     /// # Examples
     ///
     /// ```
-    /// use btree_slab::BTreeMap;
+    /// use btree::BTreeMap;
     ///
     /// let mut map: BTreeMap<&str, usize> = BTreeMap::new();
     /// map.entry("poneyland").or_insert(12);
@@ -245,7 +245,7 @@ impl<'a, K, V, C: Slab<Node<K, V>>> VacantEntry<'a, K, V, C> {
 impl<'a, K, V, C: SlabMut<Node<K, V>>> VacantEntry<'a, K, V, C>
 where
     C: SimpleCollectionRef,
-    C: SimpleCollectionRef,
+    C: SimpleCollectionMut,
 {
     /// Sets the value of the entry with the `VacantEntry`'s key,
     /// and returns a mutable reference to it.
@@ -271,7 +271,7 @@ where
 
 impl<'a, K: fmt::Debug, V, C: Slab<Node<K, V>>> fmt::Debug for VacantEntry<'a, K, V, C> {
     #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_tuple("VacantEntry").field(self.key()).finish()
     }
 }
@@ -460,7 +460,7 @@ where
     C: SimpleCollectionRef,
 {
     #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("OccupiedEntry")
             .field("key", self.key())
             .field("value", self.get())

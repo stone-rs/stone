@@ -10,7 +10,7 @@ pub use internal::Internal as InternalNode;
 pub use item::Item;
 pub use leaf::Leaf as LeafNode;
 
-/// Type idenfier by a key.
+/// Type identifier by a key.
 ///
 /// This is implemented by [`Item`] and [`internal::Branch`].
 pub trait Keyed {
@@ -114,13 +114,13 @@ impl PartialOrd<usize> for Offset {
 }
 
 impl From<usize> for Offset {
-    fn from(offset: usize) -> Self {
+    fn from(offset: usize) -> Offset {
         Offset(offset)
     }
 }
 
 impl fmt::Display for Offset {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.0 == usize::MAX {
             write!(f, "-1")
         } else {
@@ -130,7 +130,7 @@ impl fmt::Display for Offset {
 }
 
 impl fmt::Debug for Offset {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.0 == usize::MAX {
             write!(f, "-1")
         } else {
@@ -158,11 +158,12 @@ pub enum Balance {
 pub struct WouldUnderflow;
 
 /// Type of the value returned by `Node::pop_right`.
+///
 /// It includes the offset of the popped item, the item itself and the index of
 /// the right child of the item if it is removed from an internal node.
 pub type PoppedItem<K, V> = (Offset, Item<K, V>, Option<usize>);
 
-/// B-Tree node.
+/// B-tree node.
 #[derive(Clone)]
 pub enum Node<K, V> {
     /// Internal node.
@@ -264,21 +265,21 @@ impl<K, V> Node<K, V> {
     pub fn child_id_opt(&self, index: usize) -> Option<usize> {
         match self {
             Node::Internal(node) => node.child_id_opt(index),
-            _ => None,
+            Node::Leaf(_) => None,
         }
     }
 
     #[inline]
-    pub fn get<Q: ?Sized>(&self, key: &Q) -> Result<Option<&V>, usize> 
+    pub fn get<Q: ?Sized>(&self, key: &Q) -> Result<Option<&V>, usize>
     where
         K: Borrow<Q>,
-        Q: Ord
+        Q: Ord,
     {
         match self {
             Node::Leaf(leaf) => Ok(leaf.get(key)),
             Node::Internal(node) => match node.get(key) {
                 Ok(value) => Ok(Some(value)),
-                Err(e) => Err(e)
+                Err(e) => Err(e),
             },
         }
     }
@@ -287,7 +288,7 @@ impl<K, V> Node<K, V> {
     pub fn get_mut<Q: ?Sized>(&mut self, key: &Q) -> Result<Option<&mut V>, usize>
     where
         K: Borrow<Q>,
-        Q: Ord
+        Q: Ord,
     {
         match self {
             Node::Leaf(leaf) => Ok(leaf.get_mut(key)),
@@ -299,15 +300,15 @@ impl<K, V> Node<K, V> {
     }
 
     /// Find the offset of the item matching the given key.
-    /// 
+    ///
     /// If the key matches no item in this node,
     /// this function returns the index and id of the child that may match the key,
     /// or `Err(None)` if it is a leaf.
     #[inline]
-    pub fn offset_of<Q: ?Sized>(&self, key: &Q) -> Result<Offset, (usize, Option<usize>)> 
+    pub fn offset_of<Q: ?Sized>(&self, key: &Q) -> Result<Offset, (usize, Option<usize>)>
     where
         K: Borrow<Q>,
-        Q: Ord
+        Q: Ord,
     {
         match self {
             Node::Internal(node) => match node.offset_of(key) {
@@ -338,17 +339,17 @@ impl<K, V> Node<K, V> {
     }
 
     /// Insert by key.
-    /// 
+    ///
     /// It is assumed that the node is not free.
     /// If it is a leaf node, there must be a free space in it for the inserted value.
     #[inline]
     pub fn insert_by_key(
         &mut self,
         key: K,
-        value: V
-    ) -> Result<(Offset, Option<V>), internal::InsertionError<K, V>> 
+        value: V,
+    ) -> Result<(Offset, Option<V>), internal::InsertionError<K, V>>
     where
-        K: Ord
+        K: Ord,
     {
         match self {
             Node::Internal(node) => match node.insert_by_key(key, value) {
@@ -360,17 +361,18 @@ impl<K, V> Node<K, V> {
     }
 
     /// Split the node.
-    /// Return the length of the nod after split, the median item add the right node.
+    /// Return the length of the node after split, the median item and the right node.
+    #[inline]
     pub fn split(&mut self) -> (usize, Item<K, V>, Node<K, V>) {
         match self {
             Node::Internal(node) => {
                 let (len, item, right_node) = node.split();
                 (len, item, Node::Internal(right_node))
-            },
+            }
             Node::Leaf(leaf) => {
                 let (len, item, right_leaf) = leaf.split();
                 (len, item, Node::Leaf(right_leaf))
-            },
+            }
         }
     }
 
@@ -410,7 +412,7 @@ impl<K, V> Node<K, V> {
             Node::Internal(node) => {
                 let (item, child_id) = node.pop_left()?;
                 Ok((item, Some(child_id)))
-            },
+            }
             Node::Leaf(leaf) => Ok((leaf.pop_left()?, None)),
         }
     }
@@ -429,11 +431,11 @@ impl<K, V> Node<K, V> {
             Node::Internal(node) => {
                 let (offset, item, child_id) = node.pop_right()?;
                 Ok((offset, item, Some(child_id)))
-            },
+            }
             Node::Leaf(leaf) => {
                 let (offset, item) = leaf.pop_right()?;
                 Ok((offset, item, None))
-            },
+            }
         }
     }
 
@@ -447,14 +449,14 @@ impl<K, V> Node<K, V> {
                 } else {
                     None
                 }
-            },
+            }
             Node::Leaf(leaf) => {
                 if offset < leaf.item_count() {
-                    Some(Ok(leaf.remvoe(offset)))
+                    Some(Ok(leaf.remove(offset)))
                 } else {
                     None
                 }
-            },
+            }
         }
     }
 
@@ -465,13 +467,13 @@ impl<K, V> Node<K, V> {
                 let child_index = node.child_count() - 1;
                 let child_id = node.child_id(child_index);
                 Err(child_id)
-            },
+            }
             Node::Leaf(leaf) => Ok(leaf.remove_last()),
         }
     }
 
     /// Put an item in a node.
-    /// 
+    ///
     /// It is assumed that the node will not overflow.
     #[inline]
     pub fn insert(&mut self, offset: Offset, item: Item<K, V>, opt_right_child_id: Option<usize>) {
@@ -514,32 +516,32 @@ impl<K, V> Node<K, V> {
     }
 
     /// Write the label of the node in the DOT format.
-    /// 
+    ///
     /// Requires the `dot` feature.
     #[cfg(feature = "dot")]
-	#[inline]
-	pub fn dot_write_label<W: std::io::Write>(&self, f: &mut W) -> std::io::Result<()>
-	where
-		K: std::fmt::Display,
-		V: std::fmt::Display,
-	{
-		match self {
-			Node::Leaf(leaf) => leaf.dot_write_label(f),
-			Node::Internal(node) => node.dot_write_label(f),
-		}
-	}
+    #[inline]
+    pub fn dot_write_label<W: std::io::Write>(&self, f: &mut W) -> std::io::Result<()>
+    where
+        K: std::fmt::Display,
+        V: std::fmt::Display,
+    {
+        match self {
+            Node::Leaf(leaf) => leaf.dot_write_label(f),
+            Node::Internal(node) => node.dot_write_label(f),
+        }
+    }
 
     #[cfg(debug_assertions)]
-	pub fn validate(&self, parent: Option<usize>, min: Option<&K>, max: Option<&K>)
-	where
-		K: Ord,
-	{
-		match self {
-			Node::Leaf(leaf) => leaf.validate(parent, min, max),
-			Node::Internal(node) => node.validate(parent, min, max),
-		}
-	}
- }
+    pub fn validate(&self, parent: Option<usize>, min: Option<&K>, max: Option<&K>)
+    where
+        K: Ord,
+    {
+        match self {
+            Node::Leaf(leaf) => leaf.validate(parent, min, max),
+            Node::Internal(node) => node.validate(parent, min, max),
+        }
+    }
+}
 
 pub enum Children<'a, K, V> {
     Leaf,

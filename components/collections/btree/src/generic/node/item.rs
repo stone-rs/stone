@@ -1,6 +1,5 @@
-use std::mem::MaybeUninit;
-
 use super::Keyed;
+use std::{cmp::Ordering, mem::MaybeUninit};
 
 pub struct Item<K, V> {
     /// # Safety
@@ -60,7 +59,7 @@ impl<K, V> Item<K, V> {
         unsafe { self.value.assume_init_mut() }
     }
 
-    /// Modifying a key in such a way that its order regard to other keys changes is a logical error.
+    /// Modifying a key in such a way that its order with regard to other keys changes is a logical error.
     #[inline]
     pub fn set(&mut self, key: K, value: V) -> (K, V) {
         let mut old_key = MaybeUninit::new(key);
@@ -70,7 +69,7 @@ impl<K, V> Item<K, V> {
         unsafe { (old_key.assume_init(), old_value.assume_init()) }
     }
 
-    /// Modifying a key in such a way that its order with to other keys changes is a logical error.
+    /// Modifying a key in such a way that its order with regard to other keys changes is a logical error.
     #[inline]
     pub fn set_key(&mut self, key: K) -> K {
         let mut old_key = MaybeUninit::new(key);
@@ -128,7 +127,7 @@ impl<K, V> Item<K, V> {
     ///
     /// # Safety
     ///
-    /// The value must be uninitialized
+    /// The value must be uninitialized.
     #[inline]
     pub unsafe fn forget_value(self) {
         let (key, _) = self.into_inner();
@@ -150,7 +149,7 @@ impl<K, V> Drop for Item<K, V> {
     fn drop(&mut self) {
         unsafe {
             std::ptr::drop_in_place(self.key.assume_init_mut());
-            std::ptr::drop_in_place(self.value.assume_init_mut())
+            std::ptr::drop_in_place(self.value.assume_init_mut());
         }
     }
 }
@@ -182,13 +181,13 @@ impl<K, V> Keyed for Item<K, V> {
 // }
 
 impl<K: PartialEq, V> PartialEq for Item<K, V> {
-    fn eq(&self, other: &Self) -> bool {
+    fn eq(&self, other: &Item<K, V>) -> bool {
         self.key().eq(other.key())
     }
 }
 
 impl<K: Ord + PartialEq, V> PartialOrd for Item<K, V> {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Item<K, V>) -> Option<Ordering> {
         Some(self.key().cmp(other.key()))
     }
 }

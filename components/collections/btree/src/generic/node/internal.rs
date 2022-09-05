@@ -35,7 +35,7 @@ impl<K, V> Keyed for Branch<K, V> {
     type Key = K;
 
     #[inline]
-    fn key(&self) -> &Self::Key {
+    fn key(&self) -> &K {
         self.item.key()
     }
 }
@@ -47,7 +47,7 @@ impl<K: PartialEq, V> PartialEq for Branch<K, V> {
 }
 
 impl<K: Ord + PartialEq, V> PartialOrd for Branch<K, V> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Branch<K, V>) -> Option<Ordering> {
         Some(self.item.key().cmp(other.item.key()))
     }
 }
@@ -69,7 +69,7 @@ pub struct InsertionError<K, V> {
 
 /// Internal node.
 ///
-/// An internal node is a node where each item is surrorunded by edges to child nodes.
+/// An internal node is a node where each item is surrounded by edges to child nodes.
 #[derive(Clone)]
 pub struct Internal<K, V> {
     parent: usize,
@@ -78,7 +78,7 @@ pub struct Internal<K, V> {
 }
 
 impl<K, V> Internal<K, V> {
-    /// Creates a binary node (with a single item and two chilren).
+    /// Creates a binary node (with a single item and two children).
     #[inline]
     pub fn binary(
         parent: Option<usize>,
@@ -292,11 +292,13 @@ impl<K, V> Internal<K, V> {
     pub fn item_mut(&mut self, offset: Offset) -> Option<&mut Item<K, V>> {
         match self.other_children.get_mut(offset.unwrap()) {
             Some(b) => Some(&mut b.item),
-            None => todo!(),
+            None => None,
         }
     }
 
     /// Insert by key.
+    ///
+    ///
     #[inline]
     pub fn insert_by_key(
         &mut self,
@@ -355,7 +357,7 @@ impl<K, V> Internal<K, V> {
                 item,
                 child: right_node_id,
             },
-        )
+        );
     }
 
     /// Replace the item at the given offset.
@@ -378,7 +380,7 @@ impl<K, V> Internal<K, V> {
 
     #[inline]
     pub fn split(&mut self) -> (usize, Item<K, V>, Internal<K, V>) {
-        assert!(self.is_overflowing()); // implies self.other_children.len() > 4
+        assert!(self.is_overflowing()); // implies self.other_children.len() >= 4
 
         // Index of the median-key item in `other_children`.
         let median_i = (self.other_children.len() - 1) / 2; // Since M is at least 3, `median_i` is at least 1.

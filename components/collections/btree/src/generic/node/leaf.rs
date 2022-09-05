@@ -52,7 +52,7 @@ impl<K, V> Leaf<K, V> {
 
     #[inline]
     pub fn iter(&self) -> std::slice::Iter<Item<K, V>> {
-        self.items().as_ref().iter()
+        self.items.as_ref().iter()
     }
 
     #[inline]
@@ -231,7 +231,7 @@ impl<K, V> Leaf<K, V> {
         self.item_count() < M / 2 - 1
     }
 
-    /// It is assumed that te leaf will not overflow.
+    /// It is assumed that the leaf will not overflow.
     #[inline]
     pub fn insert(&mut self, offset: Offset, item: Item<K, V>) {
         match offset.value() {
@@ -243,7 +243,7 @@ impl<K, V> Leaf<K, V> {
     /// Remove the item at the given offset.
     /// Return the new balance of the leaf.
     #[inline]
-    pub fn remvoe(&mut self, offset: Offset) -> Item<K, V> {
+    pub fn remove(&mut self, offset: Offset) -> Item<K, V> {
         match offset.value() {
             Some(offset) => self.items.remove(offset),
             None => panic!("Offset out of bounds"),

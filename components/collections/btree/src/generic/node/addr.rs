@@ -24,7 +24,7 @@ use std::fmt;
 /// ```
 ///
 /// ## Validity
-/// An item adress `addr` is *valid* in a given BTreeMap if it `addr.id` refers to an existing
+/// An item address `addr` is *valid* in a given BTreeMap if it `addr.id` refers to an existing
 /// node and if `addr.offset` is comprised between `-1` and the number of items in the node (included).
 /// We say that `addr` is *occupied* if it points to an actual item
 /// (`addr.offset` at least 0 and less than the number of items in the node).
@@ -96,7 +96,7 @@ pub struct Address {
 }
 
 impl Address {
-    /// Creates a new address form the identifier of the node the offset in the node.
+    /// Creates a new address from the identifier of the node and the offset in the node.
     #[inline]
     pub fn new(id: usize, offset: Offset) -> Address {
         Address { id, offset }
@@ -104,7 +104,7 @@ impl Address {
 
     /// Address in the empty tree.
     ///
-    /// This is the unique valid address in an ampty tree.
+    /// This is the unique valid address address in an ampty tree.
     /// It is only valid in the empty tree.
     #[inline]
     pub fn nowhere() -> Address {
@@ -122,13 +122,13 @@ impl Address {
 }
 
 impl fmt::Display for Address {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "@{}:{}", self.id, self.offset)
     }
 }
 
 impl fmt::Debug for Address {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "@{}:{}", self.id, self.offset)
     }
 }

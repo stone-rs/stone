@@ -17,7 +17,7 @@
 //! From the user point of view, the collection provided by this crate can be
 //! used just like the standard `BTreeMap` and `BTreeSet` collections.
 //! ```
-//! use btree_slab::BTreeMap;
+//! use btree::BTreeMap;
 //!
 //! // type inference lets us omit an explicit type signature (which
 //! // would be `BTreeMap<&str, &str>` in this example).
@@ -58,12 +58,12 @@
 //!
 //! ### Custom node allocation
 //!
-//! One can use `btree_slab::generic::BTreeMap` to
+//! One can use `btree::generic::BTreeMap` to
 //! use a custom slab type to handle nodes allocation.
 //!
 //! ```rust
 //! use slab::Slab;
-//! use btree_slab::generic::{Node, BTreeMap};
+//! use btree::generic::{Node, BTreeMap};
 //!
 //! # type K = u32;
 //! # type V = u32;
@@ -95,4 +95,4 @@ pub mod utils;
 pub type BTreeMap<K, V> = generic::BTreeMap<K, V, Slab<generic::Node<K, V>>>;
 
 // B-Tree set based on `Slab`.
-// pub type BTreeSet<T> = generic::BTreeSet<T, Slab<generic::Node<T, ()>>>;
+pub type BTreeSet<T> = generic::BTreeSet<T, Slab<generic::Node<T, ()>>>;
