@@ -302,7 +302,7 @@ impl<K, V> Node<K, V> {
     /// Find the offset of the item matching the given key.
     ///
     /// If the key matches no item in this node,
-    /// this function returns the index and id of the child that may match the key,
+    /// this funtion returns the index and id of the child that may match the key,
     /// or `Err(None)` if it is a leaf.
     #[inline]
     pub fn offset_of<Q: ?Sized>(&self, key: &Q) -> Result<Offset, (usize, Option<usize>)>

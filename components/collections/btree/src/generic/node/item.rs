@@ -4,7 +4,7 @@ use std::{cmp::Ordering, mem::MaybeUninit};
 pub struct Item<K, V> {
     /// # Safety
     ///
-    /// This field must always initialized when the item is accessed and/or dropped.
+    /// This field must always be initialized when the item is accessed and/or dropped.
     key: MaybeUninit<K>,
 
     /// # Safety
@@ -130,8 +130,9 @@ impl<K, V> Item<K, V> {
     /// The value must be uninitialized.
     #[inline]
     pub unsafe fn forget_value(self) {
-        let (key, _) = self.into_inner();
-        std::mem::drop(key.assume_init())
+        let (key, value) = self.into_inner();
+        std::mem::drop(key.assume_init());
+        std::mem::forget(value);
     }
 
     #[inline]

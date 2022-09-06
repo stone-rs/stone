@@ -24,7 +24,7 @@ use std::fmt;
 /// ```
 ///
 /// ## Validity
-/// An item address `addr` is *valid* in a given BTreeMap if it `addr.id` refers to an existing
+/// An item adress `addr` is *valid* in a given BTreeMap if it `addr.id` refers to an existing
 /// node and if `addr.offset` is comprised between `-1` and the number of items in the node (included).
 /// We say that `addr` is *occupied* if it points to an actual item
 /// (`addr.offset` at least 0 and less than the number of items in the node).

@@ -213,7 +213,7 @@ impl<K, V> Internal<K, V> {
     {
         match binary_search_min(&self.other_children, key) {
             Some(offset) => {
-                let b: &Branch<K, V> = &self.other_children[offset];
+                let b = &self.other_children[offset];
                 if b.item.key().borrow() == key {
                     Ok(b.item.value())
                 } else {
@@ -232,7 +232,7 @@ impl<K, V> Internal<K, V> {
     {
         match binary_search_min(&self.other_children, key) {
             Some(offset) => {
-                let b: &mut Branch<K, V> = &mut self.other_children[offset];
+                let b = &mut self.other_children[offset];
                 if b.item.key().borrow() == key {
                     Ok(b.item.value_mut())
                 } else {
@@ -246,7 +246,7 @@ impl<K, V> Internal<K, V> {
     /// Find the offset of the item matching the given key.
     ///
     /// If the key matches no item in this node,
-    /// this funciton returns the index and id of the child that may match the key.
+    /// this funtion returns the index and id of the child that may match the key.
     #[inline]
     pub fn offset_of<Q: ?Sized>(&self, key: &Q) -> Result<Offset, (usize, usize)>
     where
@@ -506,9 +506,9 @@ impl<K, V> Internal<K, V> {
     }
 
     #[cfg(debug_assertions)]
-    pub fn validate(&self, parent: Option<usize>, min: Option<&K>, max: Option<&K>) 
+    pub fn validate(&self, parent: Option<usize>, min: Option<&K>, max: Option<&K>)
     where
-        K: Ord
+        K: Ord,
     {
         if self.parent() != parent {
             panic!("wrong parent")

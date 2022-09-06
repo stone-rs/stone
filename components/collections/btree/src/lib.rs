@@ -83,7 +83,7 @@
 //! internal structure of the tree using this addressing system.
 //! This can be used to further extend the functionalities of the `BTreeMap`
 //! collection, for example in the
-//! [`btree-range-map`](https://crates.io/crates/btree-range-map) crate.
+//! [`range-tree`]() crate.
 #![feature(generic_associated_types)]
 
 use slab::Slab;
