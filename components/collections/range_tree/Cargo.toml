@@ -10,6 +10,6 @@ readme = "README.md"
 
 [dependencies]
 cc-traits = "0.8.0"
-btree = "../btree"
+btree = { path = "../btree" }
 slab = "0.4.5"
 range-traits = "0.1.0"
