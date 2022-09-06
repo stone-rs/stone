@@ -48,17 +48,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "btree-slab"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6d5d99a446fc43a159e25be12c72f84674e1e67ec8c7402e55d1cb49205507f"
-dependencies = [
- "cc-traits",
- "slab",
- "smallvec",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -426,7 +415,7 @@ checksum = "4473d273e456fd55eb6539c391f22c6e501fff9a800e84431ba68b26001c0a16"
 name = "range_tree"
 version = "0.1.0"
 dependencies = [
- "btree-slab",
+ "btree",
  "cc-traits",
  "range-traits",
  "slab",
