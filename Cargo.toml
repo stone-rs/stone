@@ -8,6 +8,8 @@ members = [
     "components/collections/rb_tree",
     "components/collections/btree",
     "components/collections/range_tree",
+    "components/sys",
+    "components/spa",
 ]
 
 [dependencies]

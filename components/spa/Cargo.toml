@@ -1,0 +1,10 @@
+[package]
+name = "spa"
+version = "0.1.0"
+edition = "2021"
+readme = "README.md"
+
+[dependencies]
+sys = { path = "../sys" }
+num_enum = "0.2"
+bitflags = "1.3"
