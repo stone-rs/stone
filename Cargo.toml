@@ -2,6 +2,7 @@
 name = "stone"
 version = "0.1.0"
 edition = "2021"
+readme = "README.md"
 
 [workspace]
 members = [
@@ -11,5 +12,3 @@ members = [
     "components/sys",
     "components/spa",
 ]
-
-[dependencies]
