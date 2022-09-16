@@ -18,3 +18,8 @@ pub enum SIOChecksum {
     SKEIN,
     FUNCTIONS,
 }
+
+#[derive(Clone)]
+pub struct SIO {
+
+}
