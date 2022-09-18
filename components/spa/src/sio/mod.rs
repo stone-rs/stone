@@ -20,6 +20,10 @@ pub enum SIOChecksum {
 }
 
 #[derive(Clone)]
-pub struct SIO {
+pub struct SIO {}
 
+impl SIO {
+    pub fn new() -> Self {
+        SIO {}
+    }
 }
