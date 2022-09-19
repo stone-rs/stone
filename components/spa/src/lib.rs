@@ -4,6 +4,8 @@ pub mod blkptr;
 pub mod sio;
 pub mod stat;
 pub mod spa_log;
+pub mod space_map;
+pub mod dmu;
 
 bitflags! {
     pub struct ImportType: u8 {
