@@ -1499,6 +1499,24 @@ where
 			len,
 		}
 	}
+
+	#[inline]
+	pub fn prev(&mut self) -> Option<(&'a K, &'a V)> {
+		match self.addr {
+			Some(addr) => {
+				if self.len > 0 {
+					self.len += 1;
+
+					let item = self.btree.item(addr)?;
+					self.addr = self.btree.previous_item_address(addr);
+					Some((item.key(), item.value()))
+				} else {
+					None
+				}
+			}
+			None => None,
+		}
+	}
 }
 
 impl<'a, K, V, C: Slab<Node<K, V>>> Iterator for Iter<'a, K, V, C>
@@ -1519,7 +1537,7 @@ where
 				if self.len > 0 {
 					self.len -= 1;
 
-					let item = self.btree.item(addr).unwrap();
+					let item = self.btree.item(addr)?;
 					self.addr = self.btree.next_item_address(addr);
 					Some((item.key(), item.value()))
 				} else {
@@ -1548,13 +1566,13 @@ where
 	fn next_back(&mut self) -> Option<(&'a K, &'a V)> {
 		if self.len > 0 {
 			let addr = match self.end {
-				Some(addr) => self.btree.previous_item_address(addr).unwrap(),
-				None => self.btree.last_item_address().unwrap(),
+				Some(addr) => self.btree.previous_item_address(addr)?,
+				None => self.btree.last_item_address()?,
 			};
 
 			self.len -= 1;
 
-			let item = self.btree.item(addr).unwrap();
+			let item = self.btree.item(addr)?;
 			self.end = Some(addr);
 			Some((item.key(), item.value()))
 		} else {
@@ -1613,7 +1631,7 @@ where
 					self.len -= 1;
 
 					self.addr = self.btree.next_item_address(addr);
-					let item = self.btree.item_mut(addr).unwrap();
+					let item = self.btree.item_mut(addr)?;
 					Some(unsafe { std::mem::transmute(item) }) // this is safe because only one mutable reference to the same item can be emitted.
 				} else {
 					None
@@ -1627,7 +1645,7 @@ where
 	fn next_back_item(&mut self) -> Option<&'a mut Item<K, V>> {
 		if self.len > 0 {
 			let addr = match self.end {
-				Some(addr) => self.btree.previous_item_address(addr).unwrap(),
+				Some(addr) => self.btree.previous_item_address(addr)?,
 				None => self.btree.last_item_address().unwrap(),
 			};
 
@@ -2134,6 +2152,16 @@ impl<'a, K, V, C: Slab<Node<K, V>>> FusedIterator for Keys<'a, K, V, C> where
 impl<'a, K, V, C: Slab<Node<K, V>>> ExactSizeIterator for Keys<'a, K, V, C> where
 	for<'r> C::ItemRef<'r>: Into<&'r Node<K, V>>
 {
+}
+
+impl<'a, K, V, C: Slab<Node<K, V>>> Keys<'a, K, V, C>
+where
+	for<'r> C::ItemRef<'r>: Into<&'r Node<K, V>>,
+{
+	#[inline]
+	pub fn prev(&mut self) -> Option<&'a K> {
+		self.inner.prev().map(|(k, _)| k)
+	}
 }
 
 impl<'a, K, V, C: Slab<Node<K, V>>> Iterator for Keys<'a, K, V, C>

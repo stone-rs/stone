@@ -868,6 +868,16 @@ pub struct Iter<'a, T, C> {
 	inner: map::Keys<'a, T, (), C>,
 }
 
+impl<'a, T, C: Slab<Node<T, ()>>> Iter<'a, T, C>
+where
+	for<'r> C::ItemRef<'r>: Into<&'r Node<T, ()>>,
+{
+	#[inline]
+	pub fn prev(&mut self) -> Option<&'a T> {
+		self.inner.prev()
+	}
+}
+
 impl<'a, T, C: Slab<Node<T, ()>>> Iterator for Iter<'a, T, C>
 where
 	for<'r> C::ItemRef<'r>: Into<&'r Node<T, ()>>,

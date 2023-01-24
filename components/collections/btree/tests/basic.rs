@@ -3,7 +3,7 @@ use btree::{
 		map::{BTreeExt, BTreeExtMut},
 		node::Item,
 	},
-	BTreeMap,
+	BTreeMap, BTreeSet,
 };
 use rand::{rngs::SmallRng, seq::SliceRandom, SeedableRng};
 
@@ -21,6 +21,43 @@ pub fn insert() {
 	}
 
 	assert!(btree.len() == 100);
+}
+
+#[test]
+pub fn map_iter() {
+	let mut btree: BTreeMap<usize, usize> = BTreeMap::new();
+
+	for (key, value) in &[(1, 10), (2, 20)] {
+		if let Some(_) = btree.insert(*key, *value) {
+			println!("duplicate: {}", key);
+		}
+		btree.validate();
+	}
+
+	let mut iter = btree.iter();
+	println!("{:?}", iter.next());
+	println!("{:?}", iter.prev()); 
+	println!("{:?}", iter.next());
+	println!("{:?}", iter.next());
+	println!("{:?}", iter.next());
+}
+
+#[test]
+pub fn set_iter() {
+	let mut btree: BTreeSet<usize> = BTreeSet::new();
+
+	for (key, _) in &[(1, 10), (2, 20)] {
+		if !btree.insert(*key) {
+			println!("duplicate: {}", key);
+		}
+	}
+
+	let mut iter = btree.iter();
+	println!("{:?}", iter.next());
+	println!("{:?}", iter.prev()); 
+	println!("{:?}", iter.next());
+	println!("{:?}", iter.next());
+	println!("{:?}", iter.next());
 }
 
 #[test]
