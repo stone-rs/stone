@@ -1,5 +1,8 @@
 use std::{borrow::Borrow, cmp::Ordering, fmt};
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 mod addr;
 pub mod internal;
 mod item;
@@ -21,6 +24,7 @@ pub trait Keyed {
 
 /// Offset in a node.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Offset(usize);
 
 impl Offset {
@@ -141,6 +145,7 @@ impl fmt::Debug for Offset {
 
 /// Node balance.
 #[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Balance {
     /// The node is balanced.
     Balanced,
@@ -165,6 +170,7 @@ pub type PoppedItem<K, V> = (Offset, Item<K, V>, Option<usize>);
 
 /// B-tree node.
 #[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Node<K, V> {
     /// Internal node.
     Internal(InternalNode<K, V>),

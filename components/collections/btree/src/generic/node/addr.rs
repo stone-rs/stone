@@ -1,3 +1,6 @@
+#[cfg(feature = "serde")]
+use serde::{Serialize, Deserialize};
+
 use super::Offset;
 use std::fmt;
 
@@ -87,6 +90,7 @@ use std::fmt;
 /// It is not safe to use an address `addr` in which `addr.id` is not the identifier of any node
 /// currently used by the tree.
 #[derive(Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Address {
     /// Identifier of the node.
     pub id: usize,

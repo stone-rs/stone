@@ -24,6 +24,24 @@ pub fn insert() {
 }
 
 #[test]
+pub fn serde_map() {
+	let mut btree: BTreeMap<usize, usize> = BTreeMap::new();
+
+	for (key, value) in &ITEMS {
+		if let Some(_) = btree.insert(*key, *value) {
+			println!("duplicate: {}", key);
+		}
+		btree.validate();
+	}
+
+	#[cfg(feature = "serde")]
+	{
+		let s = serde_json::to_string(&btree).unwrap();
+		println!("{:?}", s)
+	}
+}
+
+#[test]
 pub fn map_iter() {
 	let mut btree: BTreeMap<usize, usize> = BTreeMap::new();
 
@@ -40,6 +58,7 @@ pub fn map_iter() {
 	println!("{:?}", iter.next());
 	println!("{:?}", iter.next());
 	println!("{:?}", iter.next());
+	println!("{:?}", btree.iter().last());
 }
 
 #[test]
@@ -58,6 +77,12 @@ pub fn set_iter() {
 	println!("{:?}", iter.next());
 	println!("{:?}", iter.next());
 	println!("{:?}", iter.next());
+
+	#[cfg(feature = "serde")]
+	{
+		let s = serde_json::to_string(&btree).unwrap();
+		println!("{:?}", s)
+	}
 }
 
 #[test]

@@ -5,10 +5,15 @@ use crate::{
     },
     utils::binary_search_min,
 };
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 use smallvec::SmallVec;
 use std::borrow::Borrow;
 
 #[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Leaf<K, V> {
     parent: usize,
     items: SmallVec<[Item<K, V>; M + 1]>,
@@ -309,5 +314,21 @@ impl<K, V> Leaf<K, V> {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod leaf_tests {
+    use crate::generic::node::{Item, LeafNode};
+
+    #[test]
+    fn leaf_serialize() {
+        let item = Item::new("Hello", "world");
+        let leaf = LeafNode::new(Some(14), item);
+        let s = serde_json::to_string(&leaf).unwrap();
+        println!("{:?}", s.as_str());
+        let de = serde_json::from_str::<LeafNode<&str, &str>>(s.as_str()).unwrap();
+
+        println!("{:?} {}", de.parent(), de.items());
     }
 }

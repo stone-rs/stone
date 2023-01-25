@@ -5,6 +5,10 @@ use crate::{
     },
     utils::binary_search_min,
 };
+
+#[cfg(feature = "serde")]
+use serde::{Serialize, Deserialize};
+
 use smallvec::SmallVec;
 use std::{borrow::Borrow, cmp::Ordering};
 
@@ -17,6 +21,7 @@ const UNDERFLOW: usize = M / 2 - 1;
 ///
 /// A branch is an item followed by child node identifier.
 #[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Branch<K, V> {
     /// Item.
     pub item: Item<K, V>,
@@ -71,6 +76,7 @@ pub struct InsertionError<K, V> {
 ///
 /// An internal node is a node where each item is surrounded by edges to child nodes.
 #[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Internal<K, V> {
     parent: usize,
     first_child: usize,

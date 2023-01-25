@@ -1,5 +1,12 @@
+#[cfg(feature = "serde")]
+use serde::{
+    de::{self, MapAccess, SeqAccess, Visitor},
+    ser::SerializeStruct,
+    Deserialize, Deserializer, Serialize, Serializer,
+};
+
 use super::Keyed;
-use std::{cmp::Ordering, mem::MaybeUninit};
+use std::{cmp::Ordering, fmt, marker::PhantomData, mem::MaybeUninit};
 
 pub struct Item<K, V> {
     /// # Safety
@@ -190,5 +197,151 @@ impl<K: PartialEq, V> PartialEq for Item<K, V> {
 impl<K: Ord + PartialEq, V> PartialOrd for Item<K, V> {
     fn partial_cmp(&self, other: &Item<K, V>) -> Option<Ordering> {
         Some(self.key().cmp(other.key()))
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<K, V> Serialize for Item<K, V>
+where
+    K: Serialize,
+    V: Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut state = serializer.serialize_struct("Item", 2)?;
+        state.serialize_field("k", self.key())?;
+        state.serialize_field("v", self.value())?;
+        state.end()
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, K, V> Deserialize<'de> for Item<K, V>
+where
+    K: Deserialize<'de>,
+    V: Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        enum Field {
+            KEY,
+            VALUE,
+        }
+
+        impl<'de> Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("`k` or `v`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "k" => Ok(Field::KEY),
+                            "v" => Ok(Field::VALUE),
+                            _ => Err(de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        struct ItemVisitor<K, V> {
+            marker: PhantomData<fn() -> Item<K, V>>,
+        }
+
+        impl<K, V> ItemVisitor<K, V> {
+            fn new() -> Self {
+                ItemVisitor {
+                    marker: PhantomData,
+                }
+            }
+        }
+
+        impl<'de, K, V> Visitor<'de> for ItemVisitor<K, V>
+        where
+            K: Deserialize<'de>,
+            V: Deserialize<'de>,
+        {
+            type Value = Item<K, V>;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct Item")
+            }
+
+            fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
+            where
+                S: SeqAccess<'de>,
+            {
+                let k = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(0, &self))?;
+                let v = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                Ok(Item::new(k, v))
+            }
+
+            fn visit_map<S>(self, mut map: S) -> Result<Self::Value, S::Error>
+            where
+                S: MapAccess<'de>,
+            {
+                let mut k = None;
+                let mut v = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::KEY => {
+                            if k.is_some() {
+                                return Err(de::Error::duplicate_field("k"));
+                            }
+                            k = Some(map.next_value()?);
+                        }
+                        Field::VALUE => {
+                            if v.is_some() {
+                                return Err(de::Error::duplicate_field("v"));
+                            }
+                            v = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let k = k.ok_or_else(|| de::Error::missing_field("k"))?;
+                let v = v.ok_or_else(|| de::Error::missing_field("v"))?;
+                Ok(Item::new(k, v))
+            }
+        }
+
+        const FIELDS: &'static [&'static str] = &["k", "v"];
+        deserializer.deserialize_struct("Item", FIELDS, ItemVisitor::new())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Item;
+
+    #[test]
+    fn item_serialize() {
+        let item = Item::new("Hello", "world");
+        let s = serde_json::to_string(&item).unwrap();
+        // let ss = serde_json::from_str(s.as_str()).unwrap();
+        let s1: Item<&str, &str> = serde_json::from_str(s.as_str()).unwrap();
+
+        println!("{:?} {:?}", s1.key(), s1.value());
     }
 }
