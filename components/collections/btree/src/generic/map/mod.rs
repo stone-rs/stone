@@ -357,6 +357,18 @@ where
         Iter::new(self)
     }
 
+    #[inline]
+    pub fn start_with<Q: ?Sized>(&self, start: &Q) -> Option<Iter<K, V, C>>
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        match self.address_of(start) {
+            Ok(addr) => Some(Iter::addr(self, Some(addr))),
+            Err(_) => None,
+        }
+    }
+
     /// Gets an iterator over the keys of the map, in sorted order.
     ///
     /// # Example
@@ -856,6 +868,18 @@ where
     #[inline]
     pub fn iter_mut(&mut self) -> IterMut<K, V, C> {
         IterMut::new(self)
+    }
+
+    #[inline]
+    pub fn start_with_mut<Q: ?Sized>(&mut self, start: &Q) -> Option<IterMut<K, V, C>>
+    where
+        K: Borrow<Q>,
+        Q: Ord,
+    {
+        match self.address_of(start) {
+            Ok(addr) => Some(IterMut::addr(self, Some(addr))),
+            Err(_) => None,
+        }
     }
 
     /// Gets a mutable iterator over the entries of the map, sorted by key, that allows insertion and deletion of the iterated entries.
@@ -1492,7 +1516,7 @@ where
     for<'r> C::ItemRef<'r>: Into<&'r Node<K, V>>,
 {
     #[inline]
-    fn new(btree: &'a BTreeMap<K, V, C>) -> Self {
+    pub fn new(btree: &'a BTreeMap<K, V, C>) -> Self {
         let addr = btree.first_item_address();
         let len = btree.len();
         Iter {
@@ -1500,6 +1524,16 @@ where
             addr,
             end: None,
             len,
+        }
+    }
+
+    #[inline]
+    fn addr(btree: &'a BTreeMap<K, V, C>, addr: Option<Address>) -> Self {
+        Iter {
+            btree,
+            addr,
+            end: None,
+            len: btree.len(),
         }
     }
 
@@ -1615,8 +1649,19 @@ where
     for<'r> C::ItemMut<'r>: Into<&'r mut Node<K, V>>,
 {
     #[inline]
-    fn new(btree: &'a mut BTreeMap<K, V, C>) -> Self {
+    pub fn new(btree: &'a mut BTreeMap<K, V, C>) -> Self {
         let addr = btree.first_item_address();
+        let len = btree.len();
+        IterMut {
+            btree,
+            addr,
+            end: None,
+            len,
+        }
+    }
+
+    #[inline]
+    fn addr(btree: &'a mut BTreeMap<K, V, C>, addr: Option<Address>) -> Self {
         let len = btree.len();
         IterMut {
             btree,
@@ -2438,8 +2483,8 @@ where
     #[inline]
     fn next(&mut self) -> Option<(&'a K, &'a V)> {
         if self.addr != self.end {
-            let item = self.btree.item(self.addr).unwrap();
-            self.addr = self.btree.next_item_or_back_address(self.addr).unwrap();
+            let item = self.btree.item(self.addr)?;
+            self.addr = self.btree.next_item_or_back_address(self.addr)?;
             Some((item.key(), item.value()))
         } else {
             None

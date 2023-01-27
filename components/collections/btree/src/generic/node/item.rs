@@ -6,7 +6,7 @@ use serde::{
 };
 
 use super::Keyed;
-use std::{cmp::Ordering, fmt, marker::PhantomData, mem::MaybeUninit};
+use std::{cmp::Ordering, mem::MaybeUninit};
 
 pub struct Item<K, V> {
     /// # Safety
