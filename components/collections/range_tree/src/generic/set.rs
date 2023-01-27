@@ -43,14 +43,14 @@ where
 
 	pub fn len(&self) -> T::Len
 	where
-		T: Measure + PartialEnum,
+		T: Measure + PartialEnum + range_traits::Bounded,
 	{
 		self.map.len()
 	}
 
 	pub fn is_empty(&self) -> bool
 	where
-		T: Measure + PartialEnum,
+		T: Measure + PartialEnum + range_traits::Bounded,
 	{
 		self.len() == T::Len::default()
 	}

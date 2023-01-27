@@ -45,7 +45,7 @@ where
 {
 	pub fn len(&self) -> K::Len
 	where
-		K: Measure + PartialEnum,
+		K: Measure + PartialEnum + range_traits::Bounded,
 	{
 		let mut len = K::Len::default();
 		for (range, _) in self {
@@ -57,7 +57,7 @@ where
 
 	pub fn is_empty(&self) -> bool
 	where
-		K: Measure + PartialEnum,
+		K: Measure + PartialEnum + range_traits::Bounded,
 	{
 		self.len() == K::Len::default()
 	}

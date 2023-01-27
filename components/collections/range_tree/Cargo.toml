@@ -8,8 +8,13 @@ keywords = ["btree", "range", "map", "set"]
 description = "B-tree range map implementation"
 readme = "README.md"
 
+[features]
+default = ["std-slab"]
+std-slab = ["slab", "cc-traits/slab"]
+
 [dependencies]
-cc-traits = "0.8.0"
 btree = { path = "../btree" }
-slab = "0.4.5"
-range-traits = "0.1.0"
+cc-traits = { version = "1.0.0" }
+slab = { version = "0.4.5", features = ["serde"], optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+range-traits = "0.3.0"
